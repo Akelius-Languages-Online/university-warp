@@ -7,3 +7,4 @@ orjson==3.9.*
 ldap3==2.9.*
 msal==1.25.*
 pycryptodome==3.19.*
+prometheus_client==0.16.*

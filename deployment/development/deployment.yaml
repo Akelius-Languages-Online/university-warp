@@ -62,6 +62,10 @@ spec:
             secretKeyRef:
               name: warp-secret
               key: WARP-DATABASE
+        - name: WARP_SECRET_KEY
+          value: 'mysecretkey'
+        - name: WARP_LANGUAGE_FILE
+          value: 'i18n/en.js'
       imagePullSecrets:
       - name: businessschool-azurecr-io-regsecret
       volumes:

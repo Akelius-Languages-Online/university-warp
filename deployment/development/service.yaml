@@ -5,7 +5,7 @@ metadata:
   namespace: lae-development
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/path: /user/actuator/prometheus
+    prometheus.io/path: /metrics
 spec:
   ports:
   - port: 80
