@@ -3,6 +3,9 @@ kind: Service
 metadata:
   name: warp
   namespace: lae-production
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
 spec:
   ports:
   - port: 80

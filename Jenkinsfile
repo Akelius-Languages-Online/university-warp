@@ -45,7 +45,7 @@ enum Environment {
     }
 }
 
-boolean deployDevelopment = true //env.BRANCH_NAME == 'master'
+boolean deployDevelopment = env.BRANCH_NAME == 'master'
 boolean deployTesting     = false
 boolean deployStaging     = false
 boolean deployProduction  = env.TAG_NAME != null && env.TAG_NAME.startsWith('release-')
