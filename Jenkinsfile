@@ -256,11 +256,11 @@ def deploy(Environment environment, String imageTag) {
         def fileDirectory = environment.fileDirectory
         def kubernetesNamespace = environment.kubernetesNamespace
 
-        String secretsManifest = "deployment/${fileDirectory}/init/secret-provider-class.yaml"
+        String secretsManifest = "deployment/${fileDirectory}/secret-provider-class.yaml"
         bash("Update secrets", "kubectl apply -f ${secretsManifest} -n $kubernetesNamespace")
 
         substituteTagInManifests(environment, imageTag)
-        sh "kubectl apply -f deployment/${fileDirectory}/base-app"
+        sh "kubectl apply -f deployment/${fileDirectory}"
         sh "kubectl rollout status deployment ${KubeConfig.kubernetesService} --namespace ${kubernetesNamespace}"
     }
 }
@@ -279,15 +279,13 @@ def validateK8SConfigs(Environment environment, String imageTag) {
 
         substituteTagInManifests(environment, imageTag)
 
-        bash("validate ${envShortName} K8S Configs from init dir",
-                "kubectl apply --validate=true --dry-run=client -f deployment/${fileDirectory}/init -n $kubernetesNamespace")
-        bash("validate ${envShortName} K8S Configs from base-app dir",
-                "kubectl apply --validate=true --dry-run=client -f deployment/${fileDirectory}/base-app -n $kubernetesNamespace")
+        bash("validate ${envShortName} K8S Configs from deployment dir",
+                "kubectl apply --validate=true --dry-run=client -f deployment/${fileDirectory} -n $kubernetesNamespace")
     }
 }
 
 def substituteTagInManifests(Environment environment, String imageTag){
-    kubeSubst("IMAGE_TAG", imageTag, "deployment/${environment.fileDirectory}/base-app/deployment.yaml")
+    kubeSubst("IMAGE_TAG", imageTag, "deployment/${environment.fileDirectory}/deployment.yaml")
 }
 
 def notifySuccessfulDeploy(Environment environment) {
