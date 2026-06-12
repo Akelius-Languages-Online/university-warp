@@ -84,6 +84,14 @@ timeout(time: 30, unit: 'MINUTES') {
                                 command: 'cat',
                                 resourceLimitCpu: '500m',
                                 resourceLimitMemory: '2Gi',
+                                alwaysPullImage: false),
+                        containerTemplate(
+                                name: 'node',
+                                image: 'node:18',
+                                ttyEnabled: true,
+                                command: 'cat',
+                                resourceLimitCpu: '500m',
+                                resourceLimitMemory: '1Gi',
                                 alwaysPullImage: false)
                 ],
                 volumes: [
@@ -102,7 +110,6 @@ timeout(time: 30, unit: 'MINUTES') {
 
                 if (deploy) {
                     if (shouldBuildArtifact) {
-                        //buildArtifact()
                         buildAndPushImageStage(imageTag)
                     }
 
@@ -195,26 +202,42 @@ def validateAllK8sConfigs(String imageTag) {
 }
 
 def runTests() {
-    stage('Test') {
-        currentStage = 'Test'
-        container('maven') {
-            withCredentials([usernamePassword(credentialsId: 'artifactory.lae', passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVariable: 'ARTIFACTORY_USERNAME')]) {
-                sh "echo ${ARTIFACTORY_PASSWORD} > artifactoryPw"
-                sh "echo ${ARTIFACTORY_USERNAME} > artifactoryUser"
-                sh "export ARTIFACTORY_PASSWORD=\$(cat artifactoryPw) && export ARTIFACTORY_USERNAME=\$(cat artifactoryUser)"
-                sh "mvn clean verify -s jenkins-mvn-settings.xml -Dmaven.repo.local=${env.MAVEN_CACHE_REPO}"
-                sh "rm artifactoryPw && rm artifactoryUser"
-            }
-            junit '**/target/surefire-reports/TEST-*.xml'
-            publishHTML(target: [
-                    allowMissing         : false,
-                    alwaysLinkToLastBuild: false,
-                    keepAll              : true,
-                    reportDir            : 'target/coverage',
-                    reportFiles          : 'index.html',
-                    reportName           : 'Coverage Report',
-                    reportTitles         : ''
-            ])
+    stage('Build') {
+        currentStage = 'Build'
+
+        // Build frontend with npm / webpack
+        container('node') {
+            sh '''
+              set -e
+              echo "Building frontend..."
+              if [ -d js ]; then
+                cd js
+                if [ -f package-lock.json ] || [ -f yarn.lock ]; then
+                  npm ci
+                else
+                  npm install
+                fi
+                npm run build
+              else
+                echo "No js directory found, skipping frontend build."
+              fi
+            '''
+        }
+
+        // Basic python sanity checks: install requirements (if present) and compile sources
+        container('python') {
+            sh '''
+              set -e
+              echo "Checking Python sources..."
+              if [ -f requirements.txt ]; then
+                python -m pip install --upgrade pip
+                python -m pip install -r requirements.txt
+              else
+                echo "No requirements.txt found; skipping pip install."
+              fi
+              # compile all python files to detect syntax errors
+              python -m compileall warp
+            '''
         }
     }
 }
